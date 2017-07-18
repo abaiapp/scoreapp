@@ -1,0 +1,8 @@
+sudo systemctl restart webserver
+sudo service nginx restart
+
+sudo service mysql restart
+sudo vim /etc/mysql/mysql.conf.d/mysqld.cnf
+
+sudo cat /var/log/nginx/error.log | less
+sudo journalctl -u webserver

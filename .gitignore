@@ -2,4 +2,7 @@
 apienv/
 /apienv
 *.pyc
+/data
+data/
+restart.sh
 

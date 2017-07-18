@@ -28,8 +28,12 @@ def hello():
 def send_score():
     if request.method == 'GET':
         cur = db.cursor()
-        cur.execute('''INSERT INTO Question (sentence, is_real, source) VALUES ('бір өте үлкен сөйлем', 1, 'abai')''')
-        print "Done."
+        try:
+            cur.execute('''INSERT INTO Question (sentence, is_real, source) VALUES ('бір өте үлкен сөйлем', 1, 'abai')''')
+            db.commit()
+        except:
+            db.rollback()
+        return "Done."
         
 
 if __name__ == "__main__":
