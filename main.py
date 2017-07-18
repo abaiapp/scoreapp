@@ -20,9 +20,41 @@ db = MySQLdb.connect(host=app.config['MYSQL_HOST'],
                      db=app.config['MYSQL_DB'])
 
 
-@app.route("/")
+MAX_QUESTIONS = 2
+
+@app.route('/')
 def hello():
     return "Please, don't ruin me!!!"
+
+def read_from_source(source='abai', prefix=''):
+    sentences = []
+    with open('data/{}{}.txt'.format(prefix, source)) as f:
+        sentences = f.readlines()
+    return [x.strip() for x in sentences]
+
+def get_all_questions(source='abai'):
+    questions = []
+    real_ = read_from_source(source)
+    fake_ = read_from_source(source, 'fake_')
+    n = min(MAX_QUESTIONS / 2, min(len(real_), len(fake_)))
+    for i in range(n):
+        questions.append({'is_real': 1, 'sentence': real_[i], 'source': source})
+        questions.append({'is_real': 0, 'sentence': fake_[i], 'source': source})
+
+    cur = db.cursor()
+    for question in questions:
+        try:
+            cur.execute('''INSERT INTO Question (sentence, is_real, source) VALUES ({}, {}, {})'''.format(question['sentence'], 
+                question['is_real'], 
+                question['source']))
+            cur.commit()
+        except:
+            print "Yoo..."
+            cur.rollback()
+
+@app.route('/copy_questions')
+def copy_questions():
+    get_all_questions()
 
 @app.route('/api/v1/send_score', methods=['GET'])
 def send_score():
