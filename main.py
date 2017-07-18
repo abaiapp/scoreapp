@@ -20,7 +20,7 @@ db = MySQLdb.connect(host=app.config['MYSQL_HOST'],
                      db=app.config['MYSQL_DB'])
 
 
-MAX_QUESTIONS = 2
+MAX_QUESTIONS = 700
 
 @app.route('/')
 def hello():
@@ -33,6 +33,15 @@ def read_from_source(source='abai', prefix=''):
     return [x.strip() for x in sentences]
 
 def get_all_questions(source='abai'):
+
+    cur = db.cursor()
+    cur.execute('SELECT id FROM Question')
+    data = cur.fetchall()
+
+    if len(data) > 0:
+        print len(data)
+        return
+
     questions = []
     real_ = read_from_source(source)
     fake_ = read_from_source(source, 'fake_')
@@ -43,18 +52,21 @@ def get_all_questions(source='abai'):
 
     cur = db.cursor()
     for question in questions:
+        print question['sentence'], question['is_real'], question['source']
         try:
-            cur.execute('''INSERT INTO Question (sentence, is_real, source) VALUES ({}, {}, {})'''.format(question['sentence'], 
-                question['is_real'], 
+            cur.execute('''INSERT INTO Question (sentence, is_real, source) VALUES ('{}', '{}', '{}')'''.format(question['sentence'],
+                question['is_real'],
                 question['source']))
-            cur.commit()
+            db.commit()
         except:
             print "Yoo..."
-            cur.rollback()
+            db.rollback()
 
 @app.route('/copy_questions')
 def copy_questions():
     get_all_questions()
+    return "Done."
+
 
 @app.route('/api/v1/send_score', methods=['GET'])
 def send_score():
@@ -66,7 +78,7 @@ def send_score():
         except:
             db.rollback()
         return "Done."
-        
+
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0')
