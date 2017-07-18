@@ -9,7 +9,7 @@ import json
 # [START imports]
 from flask import Flask, request, jsonify
 from flask_cors import CORS, cross_origin
-
+import MySQLdb
 
 app = Flask(__name__)
 app.config.from_pyfile('config.cfg')
