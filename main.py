@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import sys
 import logging
 
 import random
@@ -32,7 +33,7 @@ def read_from_source(source='abai', prefix=''):
         sentences = f.readlines()
     return [x.strip() for x in sentences]
 
-def get_all_questions(source='abai'):
+def copy_all_questions(source='abai'):
 
     cur = db.cursor()
     cur.execute('SELECT id FROM Question')
@@ -52,7 +53,6 @@ def get_all_questions(source='abai'):
 
     cur = db.cursor()
     for question in questions:
-        print question['sentence'], question['is_real'], question['source']
         try:
             cur.execute('''INSERT INTO Question (sentence, is_real, source) VALUES ('{}', '{}', '{}')'''.format(question['sentence'],
                 question['is_real'],
@@ -62,23 +62,61 @@ def get_all_questions(source='abai'):
             print "Yoo..."
             db.rollback()
 
-@app.route('/copy_questions')
+#@app.route('/get_questions')
+def get_questions():
+    cur = db.cursor()
+    cur.execute('SELECT id, sentence, is_real, source from Question')
+    data = cur.fetchall()
+
+    json_data = []
+    for row in data:
+        json_data.append({
+            'id': row[0],
+            'sentence': row[1],
+            'is_real': row[2],
+            'source': row[3],
+        })
+
+    return jsonify(json_data)
+
+
+#@app.route('/copy_questions')
 def copy_questions():
-    get_all_questions()
+    copy_all_questions()
     return "Done."
 
 
-@app.route('/api/v1/send_score', methods=['GET'])
+@app.route('/api/v1/send_score', methods=['POST'])
 def send_score():
-    if request.method == 'GET':
-        cur = db.cursor()
+    if request.method == 'POST':
         try:
-            cur.execute('''INSERT INTO Question (sentence, is_real, source) VALUES ('бір өте үлкен сөйлем', 1, 'abai')''')
-            db.commit()
+            scores = request.get_json()
         except:
-            db.rollback()
-        return "Done."
+            return "Incorrect json"
 
+        cur = db.cursor()
+        for score in scores:
+            try:
+                cur.execute('''INSERT INTO Score (question_id,
+                    is_correct,
+                    submitted,
+                    device_id,
+                    lat,
+                    lon,
+                    lives,
+                    score) VALUES ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}')'''
+                    .format(score[u'question_id'],
+                        score[u'is_correct'],
+                        score[u'submitted'],
+                        score[u'device_id'],
+                        score[u'lat'],
+                        score[u'lon'],
+                        score[u'lives'],
+                        score[u'score']))
+                db.commit()
+            except:
+                db.rollback()
+        return "Done."
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0')
