@@ -8,7 +8,7 @@ import logging
 
 import random
 import json
-import datetime
+from datetime import datetime
 
 # [START imports]
 from flask import Flask, request, jsonify
