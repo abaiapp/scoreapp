@@ -1,11 +1,14 @@
 # -*- coding: utf-8 -*-
 
+# TODO capacity tests...
+
 import os
 import sys
 import logging
 
 import random
 import json
+import datetime
 
 # [START imports]
 from flask import Flask, request, jsonify
@@ -94,6 +97,7 @@ def send_score():
         except:
             return "Incorrect json"
 
+        end_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         cur = db.cursor()
         for score in scores:
             try:
@@ -104,7 +108,8 @@ def send_score():
                     lat,
                     lon,
                     lives,
-                    score) VALUES ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}')'''
+                    score,
+                    end_time) VALUES ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}')'''
                     .format(score[u'question_id'],
                         score[u'is_correct'],
                         score[u'submitted'],
@@ -112,7 +117,8 @@ def send_score():
                         score[u'lat'],
                         score[u'lon'],
                         score[u'lives'],
-                        score[u'score']))
+                        score[u'score'],
+                        end_time))
                 db.commit()
             except:
                 db.rollback()
