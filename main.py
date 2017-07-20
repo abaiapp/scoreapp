@@ -93,31 +93,33 @@ def copy_questions():
 def send_score():
     if request.method == 'POST':
         try:
-            scores = request.get_json()
+            data = request.get_json()
         except:
             return "Incorrect json"
 
         end_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         cur = db.cursor()
-        for score in scores:
+        for score in data[u'scores']:
             try:
                 cur.execute('''INSERT INTO Score (question_id,
                     is_correct,
                     submitted,
                     device_id,
+                    device_type,
                     lat,
                     lon,
                     lives,
                     score,
-                    end_time) VALUES ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}')'''
+                    end_time) VALUES ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}')'''
                     .format(score[u'question_id'],
                         score[u'is_correct'],
                         score[u'submitted'],
-                        score[u'device_id'],
-                        score[u'lat'],
-                        score[u'lon'],
-                        score[u'lives'],
-                        score[u'score'],
+                        data[u'device_id'],
+                        data[u'device_type'],
+                        data[u'lat'],
+                        data[u'lon'],
+                        data[u'lives'],
+                        data[u'score'],
                         end_time))
                 db.commit()
             except:
