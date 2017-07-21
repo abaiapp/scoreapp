@@ -101,6 +101,12 @@ def send_score():
             return "Incorrect json"
         end_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
+#        f = open('output.json', 'w');
+#        f.write(json.dumps(data));
+#        f.close();
+
+        cur = db.cursor()
+
         cur.execute('''INSERT INTO ScoreJSON (end_time, data) VALUES ('{}', '{}')'''
             .format(end_time, json.dumps(data)))
         try:
@@ -109,8 +115,23 @@ def send_score():
             print "something wrong with MySQL!!!"
             pass
 
+        items = []
         for score in data['scores']:
-            cur.execute('''INSERT INTO Score (question_id,
+            items.append((
+                score['question_id'],
+                score['is_correct'],
+                score['date_ans'],
+                data['device_id'],
+                data['device_type'],
+                data['lat'],
+                data['lon'],
+                data['lives'],
+                data['score'],
+                end_time
+            ));
+
+        sql = '''
+            INSERT IGNORE INTO Score (question_id,
                 is_correct,
                 submitted,
                 device_id,
@@ -119,17 +140,11 @@ def send_score():
                 lon,
                 lives,
                 score,
-                end_time) VALUES ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}')'''
-                .format(score['question_id'],
-                    score['is_correct'],
-                    score['date_ans'],
-                    data['device_id'],
-                    data['device_type'],
-                    data['lat'],
-                    data['lon'],
-                    data['lives'],
-                    data['score'],
-                    end_time))
+                end_time) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+
+        '''
+
+        cur.executemany(sql, items)
 
         try:
             db.commit()
