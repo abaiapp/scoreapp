@@ -24,7 +24,8 @@ db = MySQLdb.connect(host=app.config['MYSQL_HOST'],
                      db=app.config['MYSQL_DB'])
 
 
-MAX_QUESTIONS = 700
+cur = db.cursor()
+MAX_QUESTIONS = 2 * 700
 
 @app.route('/')
 def hello():
@@ -65,9 +66,10 @@ def copy_all_questions(source='abai'):
             print "Yoo..."
             db.rollback()
 
-#@app.route('/get_questions')
+    db.close()
+
+@app.route('/get_questions')
 def get_questions():
-    cur = db.cursor()
     cur.execute('SELECT id, sentence, is_real, source from Question')
     data = cur.fetchall()
 
@@ -80,10 +82,11 @@ def get_questions():
             'source': row[3],
         })
 
+    db.close()
     return jsonify(json_data)
 
 
-#@app.route('/copy_questions')
+@app.route('/copy_questions')
 def copy_questions():
     copy_all_questions()
     return "Done."
@@ -96,35 +99,46 @@ def send_score():
             data = request.get_json()
         except:
             return "Incorrect json"
-
         end_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        cur = db.cursor()
-        for score in data[u'scores']:
-            try:
-                cur.execute('''INSERT INTO Score (question_id,
-                    is_correct,
-                    submitted,
-                    device_id,
-                    device_type,
-                    lat,
-                    lon,
-                    lives,
-                    score,
-                    end_time) VALUES ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}')'''
-                    .format(score[u'question_id'],
-                        score[u'is_correct'],
-                        score[u'submitted'],
-                        data[u'device_id'],
-                        data[u'device_type'],
-                        data[u'lat'],
-                        data[u'lon'],
-                        data[u'lives'],
-                        data[u'score'],
-                        end_time))
-                db.commit()
-            except:
-                db.rollback()
-        return "Done."
+
+        cur.execute('''INSERT INTO ScoreJSON (end_time, data) VALUES ('{}', '{}')'''
+            .format(end_time, json.dumps(data)))
+        try:
+            cur.commit()
+        except:
+            print "something wrong with MySQL!!!"
+            pass
+
+        for score in data['scores']:
+            cur.execute('''INSERT INTO Score (question_id,
+                is_correct,
+                submitted,
+                device_id,
+                device_type,
+                lat,
+                lon,
+                lives,
+                score,
+                end_time) VALUES ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}')'''
+                .format(score['question_id'],
+                    score['is_correct'],
+                    score['date_ans'],
+                    data['device_id'],
+                    data['device_type'],
+                    data['lat'],
+                    data['lon'],
+                    data['lives'],
+                    data['score'],
+                    end_time))
+
+        try:
+            db.commit()
+        except:
+            db.rollback()
+
+        db.close()
+
+        return "Done." + str(random.random())
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0')
