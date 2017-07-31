@@ -25,6 +25,16 @@ MAX_QUESTIONS = 2 * 700
 def hello():
     return "Please, don't ruin me!!!"
 
+#@app.route('/api/v1/get_top_5', methods=['GET'])
+#def get_top():
+#    if request.method == 'GET':
+#        db = MySQLdb.connect(host=app.config['MYSQL_HOST'],
+#                             user=app.config['MYSQL_USER'],
+#                             passwd=app.config['MYSQL_PASSWORD'],
+#                             db=app.config['MYSQL_DB'])
+#
+#        cur = db.cursor()
+
 @app.route('/api/v1/send_score', methods=['POST'])
 def send_score():
     if request.method == 'POST':
@@ -84,7 +94,34 @@ def send_score():
         cur.close()
         db.close()
 
+        updateRanking(device_id = data['device_id'], score = data['score'])
+
         return "Done." + str(random.random())
+
+def updateRanking(device_id, score):
+    sql = '''
+        INSERT INTO Ranking (device_id, score)
+        VALUES (%s, %s)
+        ON DUPLICATE KEY UPDATE
+        score = VALUES(score);
+    '''
+    db = MySQLdb.connect(host=app.config['MYSQL_HOST'],
+                         user=app.config['MYSQL_USER'],
+                         passwd=app.config['MYSQL_PASSWORD'],
+                         db=app.config['MYSQL_DB'])
+
+
+    print (device_id, score)
+
+    cur = db.cursor()
+    cur.execute(sql, (device_id, score))
+    try:
+        db.commit()
+    except:
+        db.rollback()
+    cur.close()
+    db.close()
+
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0')
