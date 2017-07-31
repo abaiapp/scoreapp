@@ -54,6 +54,41 @@ def get_top():
         
         return jsonify(data)
 
+@app.route('/api/v1/get_rank', methods=['GET'])
+def get_rank():
+    if request.method == 'GET':
+        device_id = request.args.get('device_id', '')
+        db = MySQLdb.connect(host=app.config['MYSQL_HOST'],
+                             user=app.config['MYSQL_USER'],
+                             passwd=app.config['MYSQL_PASSWORD'],
+                             db=app.config['MYSQL_DB'])
+
+        
+        sql = '''
+            SELECT count(*)+1 FROM Ranking WHERE score > (
+                SELECT score FROM Ranking WHERE device_id = '%s');
+        ''' % device_id
+        
+        rank = 9999;
+
+        cur = db.cursor()
+        cur.execute(sql)
+        data = cur.fetchone()
+        if data is not None:
+            rank = data[0]
+        try:
+            db.commit()
+        except:
+            db.rollback()
+        cur.close()
+        db.close()
+
+        data = {
+            'rank': rank
+        }
+        
+        return jsonify(data)       
+
 
 @app.route('/api/v1/send_score', methods=['POST'])
 def send_score():
