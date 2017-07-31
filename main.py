@@ -25,15 +25,35 @@ MAX_QUESTIONS = 2 * 700
 def hello():
     return "Please, don't ruin me!!!"
 
-#@app.route('/api/v1/get_top_5', methods=['GET'])
-#def get_top():
-#    if request.method == 'GET':
-#        db = MySQLdb.connect(host=app.config['MYSQL_HOST'],
-#                             user=app.config['MYSQL_USER'],
-#                             passwd=app.config['MYSQL_PASSWORD'],
-#                             db=app.config['MYSQL_DB'])
-#
-#        cur = db.cursor()
+@app.route('/api/v1/get_top_5', methods=['GET'])
+def get_top():
+    if request.method == 'GET':
+        db = MySQLdb.connect(host=app.config['MYSQL_HOST'],
+                             user=app.config['MYSQL_USER'],
+                             passwd=app.config['MYSQL_PASSWORD'],
+                             db=app.config['MYSQL_DB'])
+
+        
+        sql = '''
+            SELECT * FROM Ranking ORDER BY score DESC LIMIT 5;
+        '''
+
+        cur = db.cursor()
+        cur.execute(sql)
+        ranking = cur.fetchall()
+        try:
+            db.commit()
+        except:
+            db.rollback()
+        cur.close()
+        db.close()
+
+        data = {
+            'ranking': ranking
+        }
+        
+        return jsonify(data)
+
 
 @app.route('/api/v1/send_score', methods=['POST'])
 def send_score():
