@@ -103,15 +103,13 @@ def updateRanking(device_id, score):
         INSERT INTO Ranking (device_id, score)
         VALUES (%s, %s)
         ON DUPLICATE KEY UPDATE
-        score = VALUES(score);
+        score = GREATEST(COALESCE(VALUES(score), score), score);
     '''
     db = MySQLdb.connect(host=app.config['MYSQL_HOST'],
                          user=app.config['MYSQL_USER'],
                          passwd=app.config['MYSQL_PASSWORD'],
                          db=app.config['MYSQL_DB'])
 
-
-    print (device_id, score)
 
     cur = db.cursor()
     cur.execute(sql, (device_id, score))
