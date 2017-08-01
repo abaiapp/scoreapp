@@ -25,9 +25,12 @@ MAX_QUESTIONS = 2 * 700
 def hello():
     return "Please, don't ruin me!!!"
 
-@app.route('/api/v1/get_top_5', methods=['GET'])
+@app.route('/api/v1/get_top', methods=['GET'])
 def get_top():
     if request.method == 'GET':
+        
+        count = request.args.get('count', 5)
+    
         db = MySQLdb.connect(host=app.config['MYSQL_HOST'],
                              user=app.config['MYSQL_USER'],
                              passwd=app.config['MYSQL_PASSWORD'],
@@ -35,8 +38,8 @@ def get_top():
 
         
         sql = '''
-            SELECT * FROM Ranking ORDER BY score DESC LIMIT 5;
-        '''
+            SELECT * FROM Ranking ORDER BY score DESC LIMIT %s;
+        ''' % str(count)
 
         cur = db.cursor()
         cur.execute(sql)
