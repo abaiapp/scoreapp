@@ -72,13 +72,27 @@ def get_rank():
                 SELECT score FROM Ranking WHERE device_id = '%s');
         ''' % device_id
         
-        rank = 9999;
+        rank = 9999
+        name = ""
 
         cur = db.cursor()
-        cur.execute(sql)
-        data = cur.fetchone()
-        if data is not None:
-            rank = data[0]
+        cur.execute("SELECT COUNT(*) FROM Ranking WHERE device_id = '%s'" % device_id)
+        row = cur.fetchone()
+        if row is not None and row[0]:
+            cur.execute(sql)
+            row = cur.fetchone()
+            if row is not None and row[0]:
+                rank = row[0]
+            
+            sql = '''
+                SELECT name FROM DeviceName WHERE device_id = '%s'
+            ''' % device_id
+
+            cur.execute(sql)
+            row = cur.fetchone()
+            if row is not None and row[0]:
+                name = row[0]
+
         try:
             db.commit()
         except:
@@ -87,7 +101,8 @@ def get_rank():
         db.close()
 
         data = {
-            'rank': rank
+            'rank': rank,
+            'name': name
         }
         
         return jsonify(data)       
