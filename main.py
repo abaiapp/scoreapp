@@ -72,7 +72,7 @@ def get_rank():
                 SELECT score FROM Ranking WHERE device_id = '%s');
         ''' % device_id
         
-        rank = 9999
+        rank = 0
         name = ""
 
         cur = db.cursor()
