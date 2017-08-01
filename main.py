@@ -193,6 +193,33 @@ def updateRanking(device_id, score):
     cur.close()
     db.close()
 
+@app.route('/api/v1/update_name', methods=['GET'])
+def updateName():
+    device_id = request.args.get('device_id', '')
+    name = request.args.get('name', '')
+    if len(device_id) > 0 and len(name) > 0:
+        sql = '''
+            INSERT INTO DeviceName (device_id, name)
+            VALUES (%s, %s)
+            ON DUPLICATE KEY UPDATE
+            name = VALUES(name)
+        '''
+        db = MySQLdb.connect(host=app.config['MYSQL_HOST'],
+                             user=app.config['MYSQL_USER'],
+                             passwd=app.config['MYSQL_PASSWORD'],
+                             db=app.config['MYSQL_DB'])
+
+        cur = db.cursor()
+        cur.execute(sql, (device_id, name))
+        try:
+            db.commit()
+        except:
+            db.rollback()
+        cur.close()
+        db.close()
+
+    return "Done."
+
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0')
