@@ -25,103 +25,147 @@ MAX_QUESTIONS = 2 * 700
 def hello():
     return "Please, don't ruin me!!!"
 
+def ranking(count):
+    db = MySQLdb.connect(host=app.config['MYSQL_HOST'],
+                         user=app.config['MYSQL_USER'],
+                         passwd=app.config['MYSQL_PASSWORD'],
+                         db=app.config['MYSQL_DB'])
+
+
+    sql = '''
+        SELECT name, score, Ranking.device_id FROM Ranking
+        LEFT JOIN DeviceName
+        ON Ranking.device_id <=> DeviceName.device_id
+        ORDER BY score DESC LIMIT %s;
+    ''' % str(count)
+
+    cur = db.cursor()
+    cur.execute(sql)
+    ranking = cur.fetchall()
+
+    data = {'ranking': [] }
+
+    for row in ranking:
+        data['ranking'].append({
+            'name': row[0],
+            'score': row[1],
+            'device_id': row[2],
+        });
+
+    try:
+        db.commit()
+    except:
+        db.rollback()
+    cur.close()
+    db.close()
+
+    return data
+
+
+
 @app.route('/api/v1/get_top', methods=['GET'])
 def get_top():
     if request.method == 'GET':
-        
         count = request.args.get('count', 5)
-    
-        db = MySQLdb.connect(host=app.config['MYSQL_HOST'],
-                             user=app.config['MYSQL_USER'],
-                             passwd=app.config['MYSQL_PASSWORD'],
-                             db=app.config['MYSQL_DB'])
+        return jsonify(ranking(count))
 
-        
-        sql = '''
-            SELECT name, score, Ranking.device_id FROM Ranking 
-            LEFT JOIN DeviceName
-            ON Ranking.device_id <=> DeviceName.device_id 
-            ORDER BY score DESC LIMIT %s;
-        ''' % str(count)
+@app.route('/api/v1/get_top_correct', methods=['GET'])
+def get_top_correct():
+    if request.method == 'GET':
+        count = request.args.get('count', 5)
+        device_id = request.args.get('device_id', '')
+        data = ranking(count)
 
-        cur = db.cursor()
+        res = []
+        found_him = 0
+
+        if data['ranking']:
+            for i in range(len(data['ranking'])):
+                device = data['ranking'][i]
+                is_this_one = 0
+                if device['device_id'] == device_id:
+                    is_this_one = 1
+                    found_him = 1
+                res.append({
+                    'is_this_one': is_this_one,
+                    'rank': i + 1,
+                    'score': device['score'],
+                    'name': device['name'],
+                    'device_type': "ios" if device['device_id'].split('-') > 1 else "android",
+                })
+
+        if found_him == 0:
+            his_rank = rank(device_id)
+            res.append({
+                'is_this_one': 1,
+                'rank': his_rank['rank'],
+                'score': his_rank['score'],
+                'name': his_rank['name'],
+                'device_type': "ios" if device_id.split('-') > 1 else "android"
+            })
+
+        return jsonify({
+            "ranking": res,
+        })
+
+def rank(device_id):
+    db = MySQLdb.connect(host=app.config['MYSQL_HOST'],
+                         user=app.config['MYSQL_USER'],
+                         passwd=app.config['MYSQL_PASSWORD'],
+                         db=app.config['MYSQL_DB'])
+
+
+    sql = '''
+        SELECT count(*)+1 FROM Ranking WHERE score > (
+            SELECT score FROM Ranking WHERE device_id = '%s');
+    ''' % device_id
+
+    rank = 0
+    name = ""
+    score = 0
+
+    cur = db.cursor()
+    cur.execute("SELECT COUNT(*) FROM Ranking WHERE device_id = '%s'" % device_id)
+    row = cur.fetchone()
+    if row is not None and row[0]:
         cur.execute(sql)
-        ranking = cur.fetchall()
+        row = cur.fetchone()
+        if row is not None and row[0]:
+            rank = row[0]
 
-        data = {'ranking': [] }
+        sql = '''
+            SELECT name FROM DeviceName WHERE device_id = '%s'
+        ''' % device_id
 
-        for row in ranking:
-            data['ranking'].append({
-                'name': row[0],
-                'score': row[1],
-                'device_id': row[2],
-            });
+        cur.execute(sql)
+        row = cur.fetchone()
+        if row is not None and row[0]:
+            name = row[0]
 
-        try:
-            db.commit()
-        except:
-            db.rollback()
-        cur.close()
-        db.close()
+        cur.execute("SELECT score FROM Ranking WHERE device_id = '%s'" % device_id)
+        row = cur.fetchone()
+        if row is not None and row[0]:
+            score = row[0]
 
-        return jsonify(data)
+    try:
+        db.commit()
+    except:
+        db.rollback()
+    cur.close()
+    db.close()
+
+    return {
+        'rank': rank,
+        'name': name,
+        'score': score,
+    }
+
 
 @app.route('/api/v1/get_rank', methods=['GET'])
 def get_rank():
     if request.method == 'GET':
         device_id = request.args.get('device_id', '')
-        db = MySQLdb.connect(host=app.config['MYSQL_HOST'],
-                             user=app.config['MYSQL_USER'],
-                             passwd=app.config['MYSQL_PASSWORD'],
-                             db=app.config['MYSQL_DB'])
-
-        
-        sql = '''
-            SELECT count(*)+1 FROM Ranking WHERE score > (
-                SELECT score FROM Ranking WHERE device_id = '%s');
-        ''' % device_id
-        
-        rank = 0
-        name = ""
-        score = 0
-
-        cur = db.cursor()
-        cur.execute("SELECT COUNT(*) FROM Ranking WHERE device_id = '%s'" % device_id)
-        row = cur.fetchone()
-        if row is not None and row[0]:
-            cur.execute(sql)
-            row = cur.fetchone()
-            if row is not None and row[0]:
-                rank = row[0]
-            
-            sql = '''
-                SELECT name FROM DeviceName WHERE device_id = '%s'
-            ''' % device_id
-
-            cur.execute(sql)
-            row = cur.fetchone()
-            if row is not None and row[0]:
-                name = row[0]
-
-            cur.execute("SELECT score FROM Ranking WHERE device_id = '%s'" % device_id)
-            row = cur.fetchone()
-            if row is not None and row[0]:
-                score = row[0]
-
-        try:
-            db.commit()
-        except:
-            db.rollback()
-        cur.close()
-        db.close()
-
-        data = {
-            'rank': rank,
-            'name': name,
-            'score': score,
-        }
-        
-        return jsonify(data)       
+        return jsonify(rank(device_id))
 
 
 @app.route('/api/v1/send_score', methods=['POST'])
