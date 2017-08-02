@@ -38,12 +38,25 @@ def get_top():
 
         
         sql = '''
-            SELECT * FROM Ranking ORDER BY score DESC LIMIT %s;
+            SELECT name, score, Ranking.device_id FROM Ranking 
+            LEFT JOIN DeviceName
+            ON Ranking.device_id <=> DeviceName.device_id 
+            ORDER BY score DESC LIMIT %s;
         ''' % str(count)
 
         cur = db.cursor()
         cur.execute(sql)
         ranking = cur.fetchall()
+
+        data = {'ranking': [] }
+
+        for row in ranking:
+            data['ranking'].append({
+                'name': row[0],
+                'score': row[1],
+                'device_id': row[2],
+            });
+
         try:
             db.commit()
         except:
@@ -51,10 +64,6 @@ def get_top():
         cur.close()
         db.close()
 
-        data = {
-            'ranking': ranking
-        }
-        
         return jsonify(data)
 
 @app.route('/api/v1/get_rank', methods=['GET'])
@@ -74,6 +83,7 @@ def get_rank():
         
         rank = 0
         name = ""
+        score = 0
 
         cur = db.cursor()
         cur.execute("SELECT COUNT(*) FROM Ranking WHERE device_id = '%s'" % device_id)
@@ -93,6 +103,11 @@ def get_rank():
             if row is not None and row[0]:
                 name = row[0]
 
+            cur.execute("SELECT score FROM Ranking WHERE device_id = '%s'" % device_id)
+            row = cur.fetchone()
+            if row is not None and row[0]:
+                score = row[0]
+
         try:
             db.commit()
         except:
@@ -102,7 +117,8 @@ def get_rank():
 
         data = {
             'rank': rank,
-            'name': name
+            'name': name,
+            'score': score,
         }
         
         return jsonify(data)       
@@ -210,7 +226,7 @@ def updateName():
                              db=app.config['MYSQL_DB'])
 
         cur = db.cursor()
-        cur.execute(sql, (device_id, name))
+        cur.execute(sql, (device_id, name.encode('utf8')))
         try:
             db.commit()
         except:
