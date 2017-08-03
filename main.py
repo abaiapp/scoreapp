@@ -96,13 +96,13 @@ def get_top_correct():
 
         if found_him == 0:
             his_rank = rank(device_id)
-            res.append({
+            res = [{
                 'is_this_one': 1,
                 'rank': his_rank['rank'],
                 'score': his_rank['score'],
                 'name': his_rank['name'],
                 'device_type': "ios" if device_id.split('-') > 1 else "android"
-            })
+            }] + res
 
         return jsonify({
             "ranking": res,
