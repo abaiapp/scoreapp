@@ -34,7 +34,7 @@ def ranking(count):
 
     sql = '''
         SELECT name, score, Ranking.device_id FROM Ranking
-        LEFT JOIN DeviceName
+        JOIN DeviceName
         ON Ranking.device_id <=> DeviceName.device_id
         ORDER BY score DESC LIMIT %s;
     ''' % str(count)
@@ -91,7 +91,7 @@ def get_top_correct():
                     'rank': i + 1,
                     'score': device['score'],
                     'name': device['name'],
-                    'device_type': "ios" if device['device_id'].split('-') > 1 else "android",
+                    'device_type': "ios" if len(device['device_id'].split('-')) > 1 else "android",
                 })
 
         if found_him == 0:
@@ -101,7 +101,7 @@ def get_top_correct():
                 'rank': his_rank['rank'],
                 'score': his_rank['score'],
                 'name': his_rank['name'],
-                'device_type': "ios" if device_id.split('-') > 1 else "android"
+                'device_type': "ios" if len(device_id.split('-')) > 1 else "android"
             }] + res
 
         return jsonify({
