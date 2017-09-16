@@ -61,6 +61,66 @@ def ranking(count):
 
     return data
 
+@app.route('/api/v1/get_word', methods=['GET'])
+def get_word():
+    if request.method == 'GET':
+
+        word = int(request.args.get('word', 1))
+        word = min(word, 45)
+
+        db = MySQLdb.connect(host=app.config['MYSQL_HOST'],
+                             user=app.config['MYSQL_USER'],
+                             passwd=app.config['MYSQL_PASSWORD'],
+                             db=app.config['MYSQL_DB'])
+
+
+        sql = '''
+            SELECT word FROM Word WHERE id = %s
+        ''' % str(word)
+
+        cur = db.cursor()
+        cur.execute(sql)
+        row = cur.fetchone()
+
+        try:
+            db.commit()
+        except:
+            db.rollback()
+        cur.close()
+        db.close()
+
+        return row[0]
+
+@app.route('/api/v1/get_which_word', methods=['GET'])
+def get_which_word():
+    if request.method == 'GET':
+        q_id = int(request.args.get('q_id', 1))
+        db = MySQLdb.connect(host=app.config['MYSQL_HOST'],
+                             user=app.config['MYSQL_USER'],
+                             passwd=app.config['MYSQL_PASSWORD'],
+                             db=app.config['MYSQL_DB'])
+
+
+        sql = '''
+            SELECT word FROM QuestionWord WHERE id = %s
+        ''' % str(q_id)
+
+        cur = db.cursor()
+        cur.execute(sql)
+        row = cur.fetchone()
+
+        try:
+            db.commit()
+        except:
+            db.rollback()
+        cur.close()
+        db.close()
+
+        if row:
+            return str(row[0])
+
+        return "-1"
+
 
 
 @app.route('/api/v1/get_top', methods=['GET'])
