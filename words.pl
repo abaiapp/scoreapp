@@ -6,9 +6,9 @@ use DBI;
 use Data::Dumper;
 
 # MySQL database configuration
-my $dsn = "DBI:mysql:test";
-my $username = "scoreapp";
-my $password = 'meteor12021997';
+my $dsn = "DBI:mysql:";
+my $username = '';
+my $password = '';
  
 # connect to MySQL database
 my %attr = ( PrintError=>0,  # turn off error reporting via warn()
